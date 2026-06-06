@@ -5,7 +5,7 @@ on:
     branches: [ master, main ]
   pull_request:
     branches: [ master, main ]
-  workflow_dispatch:  # 支持手动触发
+  workflow_dispatch:
 
 jobs:
   build:
@@ -23,6 +23,18 @@ jobs:
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
+
+      - name: Fix build.gradle (remove bintray plugin and broken repositories)
+        run: |
+          # 删除 apply plugin: 'com.jfrog.bintray' 行
+          sed -i '/apply plugin: .*bintray/d' build.gradle
+          # 删除 bintray 配置块
+          sed -i '/bintray {/,/^}/d' build.gradle
+          # 将 jcenter() 替换为 mavenCentral + 阿里云镜像
+          sed -i 's|jcenter()|mavenCentral()\n        maven { url "https://maven.aliyun.com/repository/jcenter" }|g' build.gradle
+          # 可选：添加 google()（如果不需要可忽略）
+          # 显示修改后的文件（调试用，可删除）
+          cat build.gradle
 
       - name: Build jar
         run: ./gradlew jar
